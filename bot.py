@@ -5,6 +5,7 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.utils import executor
 from aiogram.types import InputFile
+from aiogram.dispatcher.filters import ChatTypeFilter
 import os
 
 API_TOKEN = os.getenv("API_TOKEN")
@@ -120,9 +121,10 @@ async def handle_idea(message: types.Message, state: FSMContext):
     await process_message(message, "💡 Новая идея")
 
 # Прочие сообщения
-@dp.message_handler()
+@dp.message_handler(ChatTypeFilter(types.ChatType.PRIVATE))
 async def handle_unknown(message: types.Message):
     await message.answer("Спасибо! Мы получили твоё сообщение. ☕")
+
 
 # Отправка в админ-группу
 async def process_message(message: types.Message, title: str):
