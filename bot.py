@@ -39,7 +39,8 @@ async def handle_feedback(message: types.Message):
     if ADMIN_CHAT_ID:
         msg = f"📨 *Отзыв* от @{username}:\n{text}"
         await bot.send_message(chat_id=ADMIN_CHAT_ID, text=msg)
-    dp.unregister_message_handler(handle_feedback, content_types=types.ContentTypes.TEXT, state=None)
+    # ❌ НЕ отключаем handler — иначе бот перестаёт слушать
+    # dp.unregister_message_handler(...)
 
 # Добавить предложение в меню
 @dp.message_handler(lambda message: message.text == "💡 Предложение в меню")
@@ -54,7 +55,5 @@ async def handle_suggestion(message: types.Message):
     if ADMIN_CHAT_ID:
         msg = f"🧠 *Предложение* от @{username}:\n{text}"
         await bot.send_message(chat_id=ADMIN_CHAT_ID, text=msg)
-    dp.unregister_message_handler(handle_suggestion, content_types=types.ContentTypes.TEXT, state=None)
-
-if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+    # ❌ Тоже не отключаем
+    # dp.unregister_message_handler(...)
