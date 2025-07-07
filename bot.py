@@ -55,6 +55,16 @@ async def show_menu(message: types.Message):
         except Exception as e:
             await message.answer(f"Не удалось отправить {filename}: {e}")
 
+# обработчик для текстового меню
+@dp.message_handler(lambda message: message.text in ["📜 Меню (текстом)", "📜 Меню (текстом без картинок)"], state='*')
+async def show_text_menu(message: types.Message):
+    try:
+        with open("menu.txt", "r", encoding="utf-8") as f:
+            menu = f.read()
+    except FileNotFoundError:
+        menu = "Меню пока не заполнено."
+    await message.answer(f"☕ Наше меню:\n{menu}")
+
 
 # ➕ Добавить в меню
 @dp.message_handler(lambda message: message.text == "➕ Добавить в меню", state='*')
