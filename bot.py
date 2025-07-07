@@ -54,17 +54,20 @@ async def menu_options(message: types.Message, state: FSMContext):
 # 📸 Посмотреть меню с фото
 @dp.message_handler(lambda message: message.text == "📸 Посмотреть меню с фото", state='*')
 async def show_menu_photos(message: types.Message):
-    items = [
-        ("pictures/чизкейк.jpg", "🍰 Чизкейк — 270₽"),
-        ("pictures/круасан.jpg", "🥐 Круассан с лососем — 390₽"),
-        ("pictures/капучино.jpg", "☕ Капучино — 200₽"),
-        ("pictures/эспрессо.jpg", "☕ Эспрессо — 150₽"),
-    ]
-    for filename, caption in items:
-        try:
-            await bot.send_photo(message.chat.id, InputFile(filename), caption=caption)
-        except Exception as e:
-            await message.answer(f"Не удалось отправить {filename}: {e}")
+    try:
+        with open("menu_pictures.txt", "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        for line in lines:
+            if "|" not in line:
+                continue
+            filename, caption = line.strip().split("|", 1)
+            try:
+                await bot.send_photo(message.chat.id, InputFile(filename), caption=caption)
+            except Exception as e:
+                await message.answer(f"Не удалось отправить {filename}: {e}")
+    except FileNotFoundError:
+        await message.answer("Меню с фото пока не заполнено.")
+
 
 # 📜 Посмотреть меню без фото
 @dp.message_handler(lambda message: message.text == "📜 Посмотреть меню без фото", state='*')
