@@ -4,7 +4,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.utils import executor
-from aiogram.types import InputFile #для картинок в меню
+from aiogram.types import InputFile
 import os
 
 API_TOKEN = os.getenv("API_TOKEN")
@@ -21,28 +21,39 @@ class Form(StatesGroup):
     idea = State()
 
 # Главное меню
+def main_menu():
+    kb = ReplyKeyboardMarkup(resize_keyboard=True)
+    kb.add(KeyboardButton("📋 Меню"))
+    kb.add(KeyboardButton("💬 Оставить отзыв"))
+    kb.add(KeyboardButton("💡 Предложить идею"))
+    return kb
+
+# Вложенное меню ("папка" меню)
+def menu_submenu():
+    kb = ReplyKeyboardMarkup(resize_keyboard=True)
+    kb.add(KeyboardButton("📸 Посмотреть меню с фото"))
+    kb.add(KeyboardButton("📜 Посмотреть меню без фото"))
+    kb.add(KeyboardButton("➕ Добавить пожелание по меню"))
+    kb.add(KeyboardButton("⬅️ Назад"))
+    return kb
+
+# /start — запуск/возврат в главное меню
 @dp.message_handler(commands=['start'], state='*')
 async def send_welcome(message: types.Message, state: FSMContext):
     await state.finish()
-    kb = ReplyKeyboardMarkup(resize_keyboard=True)
-    kb.add(KeyboardButton("📋 Меню"))
-    kb.add(KeyboardButton("📜 Меню (текстом без картинок)"))
-    kb.add(KeyboardButton("💬 Оставить отзыв"))
-    kb.add(KeyboardButton("💡 Предложить идею"))
-    await message.answer("Привет! Я бот кофейни AV COFFEE ☕\nЧто бы ты хотел сделать?", reply_markup=kb)
+    await message.answer(
+        "Привет! Я бот кофейни AV COFFEE ☕\nЧто бы ты хотел сделать?",
+        reply_markup=main_menu()
+    )
 
-# Меню → варианты
+# 📋 Меню — переход во вложенное меню
 @dp.message_handler(lambda message: message.text == "📋 Меню", state='*')
 async def menu_options(message: types.Message, state: FSMContext):
-    kb = ReplyKeyboardMarkup(resize_keyboard=True)
-    kb.add(KeyboardButton("📖 Посмотреть меню"))
-    kb.add(KeyboardButton("➕ Добавить в меню"))
-    kb.add(KeyboardButton("⬅️ Назад"))
-    await message.answer("Выбери действие:", reply_markup=kb)
+    await message.answer("Что интересует?", reply_markup=menu_submenu())
 
-# Посмотреть меню
-@dp.message_handler(lambda message: message.text == "📖 Посмотреть меню", state='*')
-async def show_menu(message: types.Message):
+# 📸 Посмотреть меню с фото
+@dp.message_handler(lambda message: message.text == "📸 Посмотреть меню с фото", state='*')
+async def show_menu_photos(message: types.Message):
     items = [
         ("pictures/чизкейк.jpg", "🍰 Чизкейк — 270₽"),
         ("pictures/круасан.jpg", "🥐 Круассан с лососем — 390₽"),
@@ -55,10 +66,9 @@ async def show_menu(message: types.Message):
         except Exception as e:
             await message.answer(f"Не удалось отправить {filename}: {e}")
 
-
-# обработчик для текстового меню
-@dp.message_handler(lambda message: message.text in ["📜 Меню (текстом)", "📜 Меню (текстом без картинок)"], state='*')
-async def show_text_menu(message: types.Message):
+# 📜 Посмотреть меню без фото
+@dp.message_handler(lambda message: message.text == "📜 Посмотреть меню без фото", state='*')
+async def show_menu_text(message: types.Message):
     try:
         with open("menu.txt", "r", encoding="utf-8") as f:
             menu = f.read()
@@ -66,12 +76,11 @@ async def show_text_menu(message: types.Message):
         menu = "Меню пока не заполнено."
     await message.answer(f"☕ Наше меню:\n{menu}")
 
-
-# ➕ Добавить в меню
-@dp.message_handler(lambda message: message.text == "➕ Добавить в меню", state='*')
+# ➕ Добавить пожелание по меню
+@dp.message_handler(lambda message: message.text == "➕ Добавить пожелание по меню", state='*')
 async def suggest_menu_item(message: types.Message):
     await Form.menu_suggestion.set()
-    await message.answer("Что бы ты хотел(а) добавить в меню? Напиши ниже 👇")
+    await message.answer("Что бы ты хотел(а) добавить или предложить по меню? Напиши ниже 👇")
 
 # 💬 Оставить отзыв
 @dp.message_handler(lambda message: message.text == "💬 Оставить отзыв", state='*')
@@ -85,7 +94,7 @@ async def suggest_idea(message: types.Message):
     await Form.idea.set()
     await message.answer("У тебя есть идея? Пиши сюда — мы читаем каждое сообщение 👇")
 
-# ⬅️ Назад
+# ⬅️ Назад — возвращает в главное меню
 @dp.message_handler(lambda message: message.text == "⬅️ Назад", state='*')
 async def go_back(message: types.Message, state: FSMContext):
     await state.finish()
@@ -107,7 +116,7 @@ async def handle_idea(message: types.Message, state: FSMContext):
     await state.finish()
     await process_message(message, "💡 Новая идея")
 
-# Обработка прочих сообщений
+# Прочие сообщения
 @dp.message_handler()
 async def handle_unknown(message: types.Message):
     await message.answer("Спасибо! Мы получили твоё сообщение. ☕")
