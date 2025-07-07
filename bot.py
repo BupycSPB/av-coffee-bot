@@ -13,7 +13,7 @@ bot = Bot(token=API_TOKEN, parse_mode="MarkdownV2")
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 
-# Состояния FSM
+# Состояния для FSM
 class Form(StatesGroup):
     feedback = State()
     suggestion = State()
@@ -21,13 +21,16 @@ class Form(StatesGroup):
 # /start — главное меню
 @dp.message_handler(commands=['start'])
 async def send_welcome(message: types.Message):
-    kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    kb = ReplyKeyboardMarkup(resize_keyboard=True)
     kb.add(KeyboardButton("📋 Меню"))
     kb.add(KeyboardButton("✏️ Написать отзыв"))
     kb.add(KeyboardButton("💡 Предложение в меню"))
-    await message.answer("Привет! Я бот кофейни *AV COFFEE* ☕\nЧто бы ты хотел сделать?", reply_markup=kb)
+    await message.answer(
+        "Привет! Я бот кофейни *AV COFFEE* ☕\nЧто бы ты хотел сделать?",
+        reply_markup=kb
+    )
 
-# Показать фотоменю
+# 🍽 Показать фотоменю
 @dp.message_handler(lambda message: message.text == "📋 Меню")
 async def show_menu(message: types.Message):
     items = [
@@ -36,13 +39,20 @@ async def show_menu(message: types.Message):
         ("капучино.jpg", "☕ *Капучино* — 200Р"),
         ("эспрессо.jpg", "☕ *Эспрессо* — 150Р"),
     ]
-    for file, caption in items:
-        await bot.send_photo(message.chat.id, InputFile(file), caption=caption)
+    for filename, caption in items:
+        await bot.send_photo(
+            message.chat.id,
+            InputFile(filename),
+            caption=caption
+        )
 
-# Начало ввода отзыва
+# ✏️ Начало ввода отзыва
 @dp.message_handler(lambda message: message.text == "✏️ Написать отзыв")
 async def start_feedback(message: types.Message):
-    await message.answer("Будем рады услышать твой отзыв! Напиши его ниже.", reply_markup=ReplyKeyboardRemove())
+    await message.answer(
+        "Будем рады услышать твой отзыв! Напиши его ниже.",
+        reply_markup=ReplyKeyboardRemove()
+    )
     await Form.feedback.set()
 
 # Обработка отзыва
@@ -56,10 +66,13 @@ async def handle_feedback(message: types.Message, state: FSMContext):
         await bot.send_message(chat_id=ADMIN_CHAT_ID, text=msg)
     await state.finish()
 
-# Начало ввода предложения
+# 💡 Начало ввода предложения
 @dp.message_handler(lambda message: message.text == "💡 Предложение в меню")
 async def start_suggestion(message: types.Message):
-    await message.answer("Напиши, что ты хотел бы предложить в меню.", reply_markup=ReplyKeyboardRemove())
+    await message.answer(
+        "Напиши, что ты хотел бы предложить в меню.",
+        reply_markup=ReplyKeyboardRemove()
+    )
     await Form.suggestion.set()
 
 # Обработка предложения
