@@ -37,8 +37,7 @@ async def handle_feedback(message: types.Message):
     text = message.text
     await message.answer("Спасибо за отзыв! 💚")
     if ADMIN_CHAT_ID:
-        msg = f"📨 *Отзыв* от @{username}:
-{text}"
+        msg = f"📨 *Отзыв* от @{username}:\n{text}"
         await bot.send_message(chat_id=ADMIN_CHAT_ID, text=msg)
     dp.unregister_message_handler(handle_feedback, content_types=types.ContentTypes.TEXT, state=None)
 
@@ -53,8 +52,7 @@ async def handle_suggestion(message: types.Message):
     text = message.text
     await message.answer("Спасибо за идею! Мы рассмотрим её 🚀")
     if ADMIN_CHAT_ID:
-        msg = f"🎭 *Предложение* от @{username}:
-{text}"
+        msg = f"🧠 *Предложение* от @{username}:\n{text}"
         await bot.send_message(chat_id=ADMIN_CHAT_ID, text=msg)
     dp.unregister_message_handler(handle_suggestion, content_types=types.ContentTypes.TEXT, state=None)
 
