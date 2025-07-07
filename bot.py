@@ -26,6 +26,7 @@ async def send_welcome(message: types.Message, state: FSMContext):
     await state.finish()
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
     kb.add(KeyboardButton("📋 Меню"))
+    kb.add(KeyboardButton("📜 Меню (текстом без картинок)"))
     kb.add(KeyboardButton("💬 Оставить отзыв"))
     kb.add(KeyboardButton("💡 Предложить идею"))
     await message.answer("Привет! Я бот кофейни AV COFFEE ☕\nЧто бы ты хотел сделать?", reply_markup=kb)
