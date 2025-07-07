@@ -1,5 +1,5 @@
 from aiogram import Bot, Dispatcher, types
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InputFile, ReplyKeyboardRemove
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from aiogram.utils import executor
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
@@ -20,34 +20,29 @@ class Form(StatesGroup):
 
 # /start — главное меню
 @dp.message_handler(commands=['start'])
-async def send_welcome(message: types.Message):
+async def cmd_start(message: types.Message):
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
-    kb.add(KeyboardButton("📋 Меню"))
-    kb.add(KeyboardButton("✏️ Написать отзыв"))
-    kb.add(KeyboardButton("💡 Предложение в меню"))
+    kb.add(KeyboardButton("📋 Показать меню"))
+    kb.add(KeyboardButton("✏️ Оставить отзыв"))
+    kb.add(KeyboardButton("💡 Предложить идею"))
     await message.answer(
-        "Привет! Я бот кофейни *AV COFFEE* ☕\nЧто бы ты хотел сделать?",
+        "Привет! Я бот кофейни *AV COFFEE* ☕\nВыбери действие:",
         reply_markup=kb
     )
 
-# 🍽 Показать фотоменю
-@dp.message_handler(lambda message: message.text == "📋 Меню")
-async def show_menu(message: types.Message):
-    items = [
-        ("чизкейк.jpg", "🍰 *Чизкейк* — 270Р"),
-        ("круасан.jpg", "🥐 *Круассан с лососем* — 390Р"),
-        ("капучино.jpg", "☕ *Капучино* — 200Р"),
-        ("эспрессо.jpg", "☕ *Эспрессо* — 150Р"),
-    ]
-    for filename, caption in items:
-        await bot.send_photo(
-            message.chat.id,
-            InputFile(filename),
-            caption=caption
-        )
+# Текстовое меню
+@dp.message_handler(lambda m: m.text == "📋 Показать меню")
+async def text_menu(message: types.Message):
+    menu_text = (
+        "🍰 *Чизкейк* — 270Р\n"
+        "🥐 *Круассан с лососем* — 390Р\n"
+        "☕ *Капучино* — 200Р\n"
+        "☕ *Эспрессо* — 150Р"
+    )
+    await message.answer(menu_text, parse_mode="MarkdownV2")
 
-# ✏️ Начало ввода отзыва
-@dp.message_handler(lambda message: message.text == "✏️ Написать отзыв")
+# Запуск ввода отзыва
+@dp.message_handler(lambda m: m.text == "✏️ Оставить отзыв")
 async def start_feedback(message: types.Message):
     await message.answer(
         "Будем рады услышать твой отзыв! Напиши его ниже.",
@@ -57,17 +52,17 @@ async def start_feedback(message: types.Message):
 
 # Обработка отзыва
 @dp.message_handler(state=Form.feedback, content_types=types.ContentTypes.TEXT)
-async def handle_feedback(message: types.Message, state: FSMContext):
+async def process_feedback(message: types.Message, state: FSMContext):
     username = message.from_user.username or message.from_user.full_name
-    text = message.text.replace("_", "\\_").replace("*", "\\*").replace("[", "\\[").replace("]", "\\]")
+    text = message.text.replace("_", "\\_").replace("*", "\\*")
     await message.answer("Спасибо за отзыв! 💚")
     if ADMIN_CHAT_ID:
-        msg = f"📨 *Отзыв* от @{username}:\n{text}"
-        await bot.send_message(chat_id=ADMIN_CHAT_ID, text=msg)
+        notification = f"📨 *Отзыв* от @{username}:\n{text}"
+        await bot.send_message(chat_id=ADMIN_CHAT_ID, text=notification)
     await state.finish()
 
-# 💡 Начало ввода предложения
-@dp.message_handler(lambda message: message.text == "💡 Предложение в меню")
+# Запуск ввода предложения
+@dp.message_handler(lambda m: m.text == "💡 Предложить идею")
 async def start_suggestion(message: types.Message):
     await message.answer(
         "Напиши, что ты хотел бы предложить в меню.",
@@ -77,13 +72,13 @@ async def start_suggestion(message: types.Message):
 
 # Обработка предложения
 @dp.message_handler(state=Form.suggestion, content_types=types.ContentTypes.TEXT)
-async def handle_suggestion(message: types.Message, state: FSMContext):
+async def process_suggestion(message: types.Message, state: FSMContext):
     username = message.from_user.username or message.from_user.full_name
-    text = message.text.replace("_", "\\_").replace("*", "\\*").replace("[", "\\[").replace("]", "\\]")
-    await message.answer("Спасибо за предложение! Мы рассмотрим её 🚀")
+    text = message.text.replace("_", "\\_").replace("*", "\\*")
+    await message.answer("Спасибо за идею! Мы рассмотрим её 🚀")
     if ADMIN_CHAT_ID:
-        msg = f"🧠 *Предложение* от @{username}:\n{text}"
-        await bot.send_message(chat_id=ADMIN_CHAT_ID, text=msg)
+        notification = f"🧠 *Предложение* от @{username}:\n{text}"
+        await bot.send_message(chat_id=ADMIN_CHAT_ID, text=notification)
     await state.finish()
 
 if __name__ == '__main__':
