@@ -1,10 +1,10 @@
-
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.utils import executor
 import os
 
-API_TOKEN = os.getenv("API_TOKEN")  # Безопасно брать токен из переменных окружения
+API_TOKEN = os.getenv("API_TOKEN")
+ADMIN_CHAT_ID = int(os.getenv("OTZYVY", "0"))  # ID группы для уведомлений
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
@@ -29,8 +29,17 @@ async def leave_feedback(message: types.Message):
     await message.answer("Будем рады услышать твой отзыв! Просто напиши его в ответ 👇")
 
 @dp.message_handler()
-async def echo(message: types.Message):
+async def handle_input(message: types.Message):
+    text = message.text
+    username = message.from_user.username or f"{message.from_user.first_name} {message.from_user.last_name or ''}"
     await message.answer("Спасибо! Мы получили твоё сообщение. ☕")
+
+    if ADMIN_CHAT_ID != 0:
+        msg = f"📩 Новое сообщение от @{username}:\n{text}"
+        try:
+            await bot.send_message(ADMIN_CHAT_ID, msg)
+        except Exception as e:
+            print(f"Ошибка при отправке в админ-группу: {e}")
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
