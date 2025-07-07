@@ -1,85 +1,105 @@
 from aiogram import Bot, Dispatcher, types
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
-from aiogram.utils import executor
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.utils import executor
 import os
 
 API_TOKEN = os.getenv("API_TOKEN")
 ADMIN_CHAT_ID = int(os.getenv("OTZYVY", "0"))
 
-bot = Bot(token=API_TOKEN, parse_mode="MarkdownV2")
+bot = Bot(token=API_TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 
-# Состояния для FSM
+# Состояния пользователя
 class Form(StatesGroup):
     feedback = State()
-    suggestion = State()
+    menu_suggestion = State()
+    idea = State()
 
-# /start — главное меню
-@dp.message_handler(commands=['start'])
-async def cmd_start(message: types.Message):
+# Главное меню
+@dp.message_handler(commands=['start'], state='*')
+async def send_welcome(message: types.Message, state: FSMContext):
+    await state.finish()
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
-    kb.add(KeyboardButton("📋 Показать меню"))
-    kb.add(KeyboardButton("✏️ Оставить отзыв"))
+    kb.add(KeyboardButton("📋 Меню"))
+    kb.add(KeyboardButton("💬 Оставить отзыв"))
     kb.add(KeyboardButton("💡 Предложить идею"))
-    await message.answer(
-        "Привет! Я бот кофейни *AV COFFEE* ☕\nВыбери действие:",
-        reply_markup=kb
-    )
+    await message.answer("Привет! Я бот кофейни AV COFFEE ☕\nЧто бы ты хотел сделать?", reply_markup=kb)
 
-# Текстовое меню
-@dp.message_handler(lambda m: m.text == "📋 Показать меню")
-async def text_menu(message: types.Message):
-    menu_text = (
-        "🍰 *Чизкейк* — 270Р\n"
-        "🥐 *Круассан с лососем* — 390Р\n"
-        "☕ *Капучино* — 200Р\n"
-        "☕ *Эспрессо* — 150Р"
-    )
-    await message.answer(menu_text, parse_mode="MarkdownV2")
+# Меню → варианты
+@dp.message_handler(lambda message: message.text == "📋 Меню", state='*')
+async def menu_options(message: types.Message, state: FSMContext):
+    kb = ReplyKeyboardMarkup(resize_keyboard=True)
+    kb.add(KeyboardButton("📖 Посмотреть меню"))
+    kb.add(KeyboardButton("➕ Добавить в меню"))
+    kb.add(KeyboardButton("⬅️ Назад"))
+    await message.answer("Выбери действие:", reply_markup=kb)
 
-# Запуск ввода отзыва
-@dp.message_handler(lambda m: m.text == "✏️ Оставить отзыв")
-async def start_feedback(message: types.Message):
-    await message.answer(
-        "Будем рады услышать твой отзыв! Напиши его ниже.",
-        reply_markup=ReplyKeyboardRemove()
-    )
+# Посмотреть меню
+@dp.message_handler(lambda message: message.text == "📖 Посмотреть меню", state='*')
+async def show_menu(message: types.Message):
+    await message.answer("☕ Наше меню:\n— Эспрессо — 150₽\n— Капучино — 200₽\n— Чизкейк — 270₽")
+
+# ➕ Добавить в меню
+@dp.message_handler(lambda message: message.text == "➕ Добавить в меню", state='*')
+async def suggest_menu_item(message: types.Message):
+    await Form.menu_suggestion.set()
+    await message.answer("Что бы ты хотел(а) добавить в меню? Напиши ниже 👇")
+
+# 💬 Оставить отзыв
+@dp.message_handler(lambda message: message.text == "💬 Оставить отзыв", state='*')
+async def leave_feedback(message: types.Message):
     await Form.feedback.set()
+    await message.answer("Мы будем рады твоему отзыву! Напиши его сюда 👇")
 
-# Обработка отзыва
-@dp.message_handler(state=Form.feedback, content_types=types.ContentTypes.TEXT)
-async def process_feedback(message: types.Message, state: FSMContext):
-    username = message.from_user.username or message.from_user.full_name
-    text = message.text.replace("_", "\\_").replace("*", "\\*")
-    await message.answer("Спасибо за отзыв! 💚")
-    if ADMIN_CHAT_ID:
-        notification = f"📨 *Отзыв* от @{username}:\n{text}"
-        await bot.send_message(chat_id=ADMIN_CHAT_ID, text=notification)
+# 💡 Предложить идею
+@dp.message_handler(lambda message: message.text == "💡 Предложить идею", state='*')
+async def suggest_idea(message: types.Message):
+    await Form.idea.set()
+    await message.answer("У тебя есть идея? Пиши сюда — мы читаем каждое сообщение 👇")
+
+# ⬅️ Назад
+@dp.message_handler(lambda message: message.text == "⬅️ Назад", state='*')
+async def go_back(message: types.Message, state: FSMContext):
     await state.finish()
+    await send_welcome(message, state)
 
-# Запуск ввода предложения
-@dp.message_handler(lambda m: m.text == "💡 Предложить идею")
-async def start_suggestion(message: types.Message):
-    await message.answer(
-        "Напиши, что ты хотел бы предложить в меню.",
-        reply_markup=ReplyKeyboardRemove()
-    )
-    await Form.suggestion.set()
-
-# Обработка предложения
-@dp.message_handler(state=Form.suggestion, content_types=types.ContentTypes.TEXT)
-async def process_suggestion(message: types.Message, state: FSMContext):
-    username = message.from_user.username or message.from_user.full_name
-    text = message.text.replace("_", "\\_").replace("*", "\\*")
-    await message.answer("Спасибо за идею! Мы рассмотрим её 🚀")
-    if ADMIN_CHAT_ID:
-        notification = f"🧠 *Предложение* от @{username}:\n{text}"
-        await bot.send_message(chat_id=ADMIN_CHAT_ID, text=notification)
+# Обработка отзывов, предложений и идей
+@dp.message_handler(state=Form.feedback)
+async def handle_feedback(message: types.Message, state: FSMContext):
     await state.finish()
+    await process_message(message, "📝 Новый отзыв")
+
+@dp.message_handler(state=Form.menu_suggestion)
+async def handle_menu_suggestion(message: types.Message, state: FSMContext):
+    await state.finish()
+    await process_message(message, "🍽️ Предложение по меню")
+
+@dp.message_handler(state=Form.idea)
+async def handle_idea(message: types.Message, state: FSMContext):
+    await state.finish()
+    await process_message(message, "💡 Новая идея")
+
+# Обработка прочих сообщений
+@dp.message_handler()
+async def handle_unknown(message: types.Message):
+    await message.answer("Спасибо! Мы получили твоё сообщение. ☕")
+
+# Отправка в админ-группу
+async def process_message(message: types.Message, title: str):
+    username = f"@{message.from_user.username}" if message.from_user.username else message.from_user.full_name
+    user_text = message.text
+    await message.answer("Спасибо! Мы получили твоё сообщение. ☕")
+
+    if ADMIN_CHAT_ID != 0:
+        text = f"{title} от {username}:\n{user_text}"
+        try:
+            await bot.send_message(ADMIN_CHAT_ID, text)
+        except Exception as e:
+            print(f"Ошибка при отправке сообщения в группу: {e}")
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
