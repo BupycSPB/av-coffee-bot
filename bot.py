@@ -30,31 +30,31 @@ async def show_menu(message: types.Message):
 @dp.message_handler(lambda message: message.text == "✏️ Написать отзыв")
 async def get_feedback(message: types.Message):
     await message.answer("Будем рады услышать твой отзыв! Напиши его в ответ 👇")
-    dp.register_message_handler(handle_feedback, content_types=types.ContentTypes.TEXT, state=None)
 
-async def handle_feedback(message: types.Message):
-    username = message.from_user.username or message.from_user.full_name
-    text = message.text.replace("_", "\\_").replace("*", "\\*").replace("[", "\\[").replace("]", "\\]")  # Экранирование
-    await message.answer("Спасибо за отзыв! 💚")
-    if ADMIN_CHAT_ID:
-        msg = f"📨 *Отзыв* от @{username}:\n{text}"
-        await bot.send_message(chat_id=ADMIN_CHAT_ID, text=msg, parse_mode="MarkdownV2")
-    dp.unregister_message_handler(handle_feedback, content_types=types.ContentTypes.TEXT, state=None)
+    @dp.message_handler(content_types=types.ContentTypes.TEXT)
+    async def handle_feedback(message: types.Message):
+        username = message.from_user.username or message.from_user.full_name
+        text = message.text.replace("_", "\\_").replace("*", "\\*")
+        await message.answer("Спасибо за отзыв! 💚")
+        if ADMIN_CHAT_ID:
+            msg = f"📨 *Отзыв* от @{username}:\n{text}"
+            await bot.send_message(chat_id=ADMIN_CHAT_ID, text=msg, parse_mode="MarkdownV2")
+        dp.message_handlers.unregister(handle_feedback)  # важно — удалить сразу после
 
 # Добавить предложение в меню
 @dp.message_handler(lambda message: message.text == "💡 Предложение в меню")
 async def get_suggestion(message: types.Message):
     await message.answer("Напиши, что ты хотел бы добавить в меню 👇")
-    dp.register_message_handler(handle_suggestion, content_types=types.ContentTypes.TEXT, state=None)
 
-async def handle_suggestion(message: types.Message):
-    username = message.from_user.username or message.from_user.full_name
-    text = message.text.replace("_", "\\_").replace("*", "\\*").replace("[", "\\[").replace("]", "\\]")  # Экранирование
-    await message.answer("Спасибо за идею! Мы рассмотрим её 🚀")
-    if ADMIN_CHAT_ID:
-        msg = f"🧠 *Предложение* от @{username}:\n{text}"
-        await bot.send_message(chat_id=ADMIN_CHAT_ID, text=msg, parse_mode="MarkdownV2")
-    dp.unregister_message_handler(handle_suggestion, content_types=types.ContentTypes.TEXT, state=None)
+    @dp.message_handler(content_types=types.ContentTypes.TEXT)
+    async def handle_suggestion(message: types.Message):
+        username = message.from_user.username or message.from_user.full_name
+        text = message.text.replace("_", "\\_").replace("*", "\\*")
+        await message.answer("Спасибо за идею! Мы рассмотрим её 🚀")
+        if ADMIN_CHAT_ID:
+            msg = f"🧠 *Предложение* от @{username}:\n{text}"
+            await bot.send_message(chat_id=ADMIN_CHAT_ID, text=msg, parse_mode="MarkdownV2")
+        dp.message_handlers.unregister(handle_suggestion)
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
