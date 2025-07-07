@@ -44,16 +44,17 @@ async def menu_options(message: types.Message, state: FSMContext):
 @dp.message_handler(lambda message: message.text == "📖 Посмотреть меню", state='*')
 async def show_menu(message: types.Message):
     items = [
-        ("чизкейк.jpg", "🍰 Чизкейк — 270₽"),
-        ("круасан.jpg", "🥐 Круассан с лососем — 390₽"),
-        ("капучино.jpg", "☕ Капучино — 200₽"),
-        ("эспрессо.jpg", "☕ Эспрессо — 150₽"),
+        ("pictures/чизкейк.jpg", "🍰 Чизкейк — 270₽"),
+        ("pictures/круасан.jpg", "🥐 Круассан с лососем — 390₽"),
+        ("pictures/капучино.jpg", "☕ Капучино — 200₽"),
+        ("pictures/эспрессо.jpg", "☕ Эспрессо — 150₽"),
     ]
     for filename, caption in items:
         try:
             await bot.send_photo(message.chat.id, InputFile(filename), caption=caption)
         except Exception as e:
             await message.answer(f"Не удалось отправить {filename}: {e}")
+
 
 # обработчик для текстового меню
 @dp.message_handler(lambda message: message.text in ["📜 Меню (текстом)", "📜 Меню (текстом без картинок)"], state='*')
