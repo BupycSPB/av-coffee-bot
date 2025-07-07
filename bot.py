@@ -4,6 +4,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.utils import executor
+from aiogram.types import InputFile #для картинок в меню
 import os
 
 API_TOKEN = os.getenv("API_TOKEN")
@@ -41,7 +42,18 @@ async def menu_options(message: types.Message, state: FSMContext):
 # Посмотреть меню
 @dp.message_handler(lambda message: message.text == "📖 Посмотреть меню", state='*')
 async def show_menu(message: types.Message):
-    await message.answer("☕ Наше меню:\n— Эспрессо — 150₽\n— Капучино — 200₽\n— Чизкейк — 270₽")
+    items = [
+        ("чизкейк.jpg", "🍰 Чизкейк — 270₽"),
+        ("круасан.jpg", "🥐 Круассан с лососем — 390₽"),
+        ("капучино.jpg", "☕ Капучино — 200₽"),
+        ("эспрессо.jpg", "☕ Эспрессо — 150₽"),
+    ]
+    for filename, caption in items:
+        try:
+            await bot.send_photo(message.chat.id, InputFile(filename), caption=caption)
+        except Exception as e:
+            await message.answer(f"Не удалось отправить {filename}: {e}")
+
 
 # ➕ Добавить в меню
 @dp.message_handler(lambda message: message.text == "➕ Добавить в меню", state='*')
