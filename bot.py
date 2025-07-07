@@ -45,8 +45,7 @@ async def handle_feedback(message: types.Message):
     username = message.from_user.username or f"{message.from_user.first_name}"
     await message.answer("Спасибо за отзыв! 💚")
     if ADMIN_CHAT_ID:
-        msg = f"📨 *Отзыв* от @{username}:
-{text}"
+        msg = f"📨 *Отзыв* от @{username}:{text}"
         await bot.send_message(ADMIN_CHAT_ID, msg, parse_mode="Markdown")
     dp.message_handlers.unregister(handle_feedback)
 
